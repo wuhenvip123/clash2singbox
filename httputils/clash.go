@@ -1,6 +1,7 @@
 package httputils
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
@@ -29,6 +30,16 @@ func GetClash(ctx context.Context, hc *http.Client, u string, addTag bool) (clas
 func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.Clash, []map[string]any, []string, error) {
 	urls := strings.Split(u, "|")
 
+	if len(urls) == 1 {
+		u, err := base64.StdEncoding.DecodeString(u)
+		if err == nil {
+			urls = lo.FilterMap(bytes.Split(u, []byte{'\n'}), func(b []byte, _ int) (string, bool) {
+				s := string(b)
+				return s, s != ""
+			})
+		}
+	}
+
 	c := clash.Clash{}
 	singList := []map[string]any{}
 	tags := []string{}
@@ -50,9 +61,9 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 			if u.Scheme != "http" && u.Scheme != "https" {
 				node, err := convert.ParseURL(v)
 				if err != nil {
-					return fmt.Errorf("GetAny: %w", err)
+					return err
 				}
-				lc.Proxies = append(c.Proxies, node)
+				lc.Proxies = append(lc.Proxies, node)
 			} else {
 				b, err := HttpGet(ctx, hc, v, 1000*1000*10)
 				if err != nil {
@@ -87,8 +98,8 @@ func GetAny(ctx context.Context, hc *http.Client, u string, addTag bool) (clash.
 				})
 			}
 			l.Lock()
-			defer l.Unlock()
 			c.Proxies = append(c.Proxies, lc.Proxies...)
+			l.Unlock()
 			return nil
 		})
 	}
