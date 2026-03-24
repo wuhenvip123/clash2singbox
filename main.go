@@ -71,7 +71,7 @@ func main() {
 		convert.ToInsecure(&c)
 	}
 
-	s, err := convert.Clash2sing(c, model.SINGLATEST)
+	s, eps, err := convert.Clash2sing(c, model.SINGLATEST)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -84,7 +84,7 @@ func main() {
 		}
 	}
 
-	outb, err = convert.Patch(outb, s, include, exclude, lo.Map(singList, func(item map[string]any, index int) any {
+	outb, err = convert.Patch(outb, s, eps, include, exclude, lo.Map(singList, func(item map[string]any, index int) any {
 		return item
 	}), tags...)
 	if err != nil {
